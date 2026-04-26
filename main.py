@@ -1,12 +1,9 @@
 import sys
-import numpy as np
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QGridLayout, 
                              QVBoxLayout, QLabel, QFrame, QMessageBox, QToolBar, QStackedWidget, QHBoxLayout)
 from PyQt6.QtCore import Qt
 from PyQt6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PyQt6.QtGui import QColor, QAction
-import pyqtgraph as pg
-
 
 
 from PyQt6.QtCore import QTimer 
