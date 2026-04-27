@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import (QFrame, QVBoxLayout, QLabel)
+from PyQt6.QtWidgets import QFrame, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 from PyQt6.QtCore import Qt
 
 class MetricCard(QFrame):
@@ -21,3 +21,33 @@ class MetricCard(QFrame):
 
     def update_value(self, value):
         self.value_label.setText(f"{value}{self.unit}")
+
+class ErrorCard(QFrame):
+    def __init__(self, message, timestamp=""):
+        super().__init__()
+        self.setObjectName("ErrorCard")
+        self.setMaximumHeight(50)
+        self.setMinimumHeight(50)
+
+        # Specific styling for Errors
+        self.setStyleSheet("""
+            QFrame#ErrorCard {
+                background-color: #2d1a1a; 
+                border-radius: 6px; 
+                border: 1px solid #ff4444;
+                margin-bottom: 5px;
+            }
+            QLabel { color: #ff9999; font-size: 13px; }
+            QLabel#Timestamp { color: #886666; font-size: 11px; }
+        """)
+
+        layout = QVBoxLayout(self)
+        
+        if timestamp:
+            self.time_label = QLabel(timestamp)
+            self.time_label.setObjectName("Timestamp")
+            layout.addWidget(self.time_label)
+
+        self.msg_label = QLabel(message)
+        self.msg_label.setWordWrap(True) 
+        layout.addWidget(self.msg_label)
