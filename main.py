@@ -1,6 +1,7 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QGridLayout, 
-                             QVBoxLayout, QLabel, QFrame, QMessageBox, QToolBar, QStackedWidget, QHBoxLayout)
+                             QVBoxLayout, QLabel, QFrame, QMessageBox, QToolBar, 
+                             QStackedWidget, QHBoxLayout, QScrollArea)
 from PyQt6.QtCore import Qt
 from PyQt6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PyQt6.QtGui import QColor, QAction
@@ -10,7 +11,7 @@ from PyQt6.QtCore import QTimer
 import random 
 
 from src.plots import MultiRealTimePlot, RealTimePlot, BarGraph
-from src.components import MetricCard
+from src.components import MetricCard, ErrorCard
 
 # Global Style
 DARK_THEME = """
@@ -39,13 +40,16 @@ class TelemetryDashboard(QMainWindow):
         self.central_stack = QStackedWidget()
         self.setCentralWidget(self.central_stack)
 
+        self.error_layout = QVBoxLayout()
+        self.error_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
         # Build UI
         self.create_pages()
         self.create_toolbar()
 
         # Automatically try to connect to available ESP32/USB port
         self.auto_connect()
-
+ 
         # TEST AREA 
         self.timer = QTimer()
         self.timer.timeout.connect(self.simulate)
@@ -63,6 +67,8 @@ class TelemetryDashboard(QMainWindow):
         self.fuel_trim_graph.update_curve("stft2", int(random.randrange(-20, 20)))
         self.fuel_trim_graph.update_curve("ltft1", int(random.randrange(-20, 20)))
         self.fuel_trim_graph.update_curve("ltft2", int(random.randrange(-20, 20)))
+
+        self.add_error("test error code") 
 
         load_values = [random.randrange(-20, 20) for _ in range(5)]
         self.torque_graph.update_bars(load_values)
@@ -112,12 +118,25 @@ class TelemetryDashboard(QMainWindow):
 
         # PAGE 3: ERROR CODES
         self.page_errors = QWidget()
-        layout_errors = QVBoxLayout(self.page_errors)
-        self.error_display = QLabel("SYSTEM STATUS: GOOD")
-        self.error_display.setStyleSheet("font-size: 30px; color: #00ff88; font-family: monospace;")
-        layout_errors.addWidget(self.error_display, alignment=Qt.AlignmentFlag.AlignCenter)
+        main_page_layout = QVBoxLayout(self.page_errors)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True) 
+        scroll.setStyleSheet("background: transparent; border: none;")
+
+        scroll_content = QWidget()
+        self.layout_errors = QVBoxLayout(scroll_content)
+        self.layout_errors.setAlignment(Qt.AlignmentFlag.AlignTop) 
+        
+        scroll.setWidget(scroll_content) 
+        main_page_layout.addWidget(scroll) 
+
         self.central_stack.addWidget(self.page_errors)
-   
+
+    def add_error(self, message, timestamp=""):
+        error = ErrorCard(message, timestamp)
+        self.layout_errors.addWidget(error)
+
     def create_toolbar(self):
         toolbar = QToolBar("Toolbar")
         self.addToolBar(toolbar)
