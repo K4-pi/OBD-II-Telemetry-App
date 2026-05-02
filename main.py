@@ -40,8 +40,6 @@ class TelemetryDashboard(QMainWindow):
         self.resize(1200, 800)
         self.setStyleSheet(DARK_THEME)
 
-        from PyQt6.QtSerialPort import QSerialPort
-
         self.serial = QSerialPort()
 
         # Stacked Widget (central widget)
@@ -59,9 +57,9 @@ class TelemetryDashboard(QMainWindow):
         self.auto_connect()
 
         # TEST AREA
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.simulate)
-        self.timer.start(500)
+        # self.timer = QTimer()
+        # self.timer.timeout.connect(self.simulate)
+        # self.timer.start(500)
 
     def simulate(self):
 
@@ -189,59 +187,53 @@ class TelemetryDashboard(QMainWindow):
         target_port = available_ports[0].portName()
         self.serial.setPortName(target_port)
 
+        # Settings
+        self.serial.setBaudRate(115200)
+        self.serial.setDataBits(QSerialPort.DataBits.Data8)
+        self.serial.setParity(QSerialPort.Parity.NoParity)
+        self.serial.setStopBits(QSerialPort.StopBits.OneStop)
+        self.serial.setFlowControl(QSerialPort.FlowControl.NoFlowControl)
+
         if self.serial.open(QSerialPort.OpenModeFlag.ReadOnly):
             print(f"Connected to {target_port}")
+            self.serial.readyRead.connect(self.handle_serial_data)
         else:
             QMessageBox.critical(self, "Serial Error", f"Could not open {target_port}")
 
     def handle_serial_data(self):
-
+        # This will now trigger whenever data actually hits the buffer
         while self.serial.canReadLine():
-            raw_data = self.serial.readLine().data().decode().strip()
+            try:
+                line_bytes = self.serial.readLine()
+                raw_data = line_bytes.data().decode("utf-8").strip()
 
-            if "=" in raw_data:
-                print(f":{raw_data}")
+                print(f"Received = {raw_data}")
 
-                try:
-                    param, value = raw_data.split("=")
+                if not raw_data or "=" not in raw_data:
+                    continue
 
-                    if param == "ENGINE_SPEED":
-                        self.speed_card.update_value(int(value))
+                param, value = raw_data.split("=", 1)
 
-                    elif param == "ENGINE_LOAD":
-                        self.load_card.update_value(int(value))
+                if param == "ENGINE_SPEED":
+                    self.speed_card.update_value(int(value))
+                elif param == "ENGINE_LOAD":
+                    self.load_card.update_value(int(value))
+                elif param == "VEHICLE_SPEED":
+                    self.speed_graph.update_plot(int(value))
+                elif param == "COOLANT_TEMP":
+                    self.coolant_temp_card.update_value(float(value))
+                elif param == "FUEL_PRESSURE":
+                    self.fuel_pressure_card.update_value(int(value))
+                elif "STFT" in param or "LTFT" in param:
+                    self.fuel_trim_graph.update_curve(param.lower(), int(value))
+                elif param == "ENGINE_PERECENT_TORQUE":
+                    tab = [int(x) for x in value.split(",")]
 
-                    elif param == "VEHICLE_SPEED":
-                        self.speed_graph.update_plot(int(value))
+                    if len(tab) == 5:
+                        self.torque_graph.update_bars(tab)
 
-                    elif param == "COOLANT_TEMP":
-                        self.coolant_temp_card.update_value(float(value))
-
-                    elif param == "FUEL_PRESSURE":
-                        self.fuel_pressure_card.update_value(int(value))
-
-                    elif param == "STFT1":
-                        self.fuel_trim_graph.update_curve("stft1", int(value))
-
-                    elif param == "STFT2":
-                        self.fuel_trim_graph.update_curve("stft2", int(value))
-
-                    elif param == "LTFT1":
-                        self.fuel_trim_graph.update_curve("ltft1", int(value))
-
-                    elif param == "LTFT2":
-                        self.fuel_trim_graph.update_curve("ltft2", int(value))
-
-                    elif param == "ENGINE_PERECENT_TORQUE":
-                        tab = [int(x) for x in value.split(",")]
-
-                        if len(tab) == 5:
-                            self.torque_graph.update_bars(tab)
-                        else:
-                            print("torque_graph data list not 5")
-
-                except Exception as e:
-                    print(f"Data Parsing Error: {e}\nReceived: {raw_data}")
+            except (UnicodeDecodeError, ValueError) as e:
+                print(f"Parsing error: {e}")
 
 
 if __name__ == "__main__":
