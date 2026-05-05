@@ -14,10 +14,12 @@ from PyQt6.QtWidgets import (
     QToolBar,
     QVBoxLayout,
     QWidget,
+    QCheckBox
 )
 
 from src.components import ErrorCard, MetricCard
-from src.plots import BarGraph, MultiRealTimePlot, RealTimePlot
+from src.plots import BarGraph, MultiRealTimePlot, RealTimePlot, RpmSpeedPlot
+from src.map import TelemetryMap
 
 # Global Style
 DARK_THEME = """
@@ -42,7 +44,7 @@ class TelemetryDashboard(QMainWindow):
 
         self.serial = QSerialPort()
 
-        # Stacked Widget (central widget)
+        # central widget
         self.central_stack = QStackedWidget()
         self.setCentralWidget(self.central_stack)
 
@@ -56,18 +58,30 @@ class TelemetryDashboard(QMainWindow):
         # Automatically try to connect to available ESP32/USB port
         self.auto_connect()
 
+        # for map testing
+        self.x = 50.02557915602892
+        self.y = 22.007746519509208
+
         # TEST AREA
-        # self.timer = QTimer()
-        # self.timer.timeout.connect(self.simulate)
-        # self.timer.start(500)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.simulate)
+        self.timer.start(1000)
 
     def simulate(self):
 
-        self.speed_card.update_value(int(random.randrange(1000, 3500)))
-        self.speed_graph.update_plot(int(random.randrange(25, 65)))
+        rpm: int = random.randrange(1000, 3500)
+        speed: int = random.randrange(25, 65)
+
+        self.rpm_card.update_value(rpm)
+        self.rpm_speed_graph.update_plot(rpm, speed)
         self.load_card.update_value(int(random.randrange(1, 100)))
         self.coolant_temp_card.update_value(float(random.randrange(-40, 40)))
-        self.fuel_pressure_card.update_value(int(random.randrange(0, 765)))
+        self.oil_temp_card.update_value(int(random.randrange(0, 765)))
+
+        self.telemetry_map.update_position(self.x, self.y, rpm, speed)
+
+        self.x += 0.0001
+        self.y += 0.0001
 
         self.fuel_trim_graph.update_curve("stft1", int(random.randrange(-20, 20)))
         self.fuel_trim_graph.update_curve("stft2", int(random.randrange(-20, 20)))
@@ -76,48 +90,42 @@ class TelemetryDashboard(QMainWindow):
 
         self.add_error("test error code")
 
-        load_values = [random.randrange(-20, 20) for _ in range(5)]
-        self.torque_graph.update_bars(load_values)
-
     def create_pages(self):
         # PAGE 1: CURRENT DATA
         self.page_data = QWidget()
         self.main_layout = QGridLayout(self.page_data)
         self.main_layout.setSpacing(15)  # Spacing
 
-        self.fuel_pressure_card = MetricCard("Fuel Pressure", " kPa", "#ffcc00")
-        self.speed_card = MetricCard("Engine Speed", " RPM", "#00ff88")
+        self.oil_temp_card = MetricCard("Engine oil temp", " C", "#ffcc00")
+        self.rpm_card = MetricCard("Engine Speed", " RPM", "#00ff88")
         self.load_card = MetricCard("Engine Load", "%", "#ff4444")
         self.coolant_temp_card = MetricCard("Coolant Temp", " C", "#3820d4")
 
-        self.main_layout.addWidget(self.fuel_pressure_card, 0, 0)
-        self.main_layout.addWidget(self.speed_card, 0, 1)
+        self.main_layout.addWidget(self.oil_temp_card, 0, 0)
+        self.main_layout.addWidget(self.rpm_card, 0, 1)
         self.main_layout.addWidget(self.load_card, 0, 2)
         self.main_layout.addWidget(self.coolant_temp_card, 0, 3)
 
-        # self.torque_graph = RealTimePlot("Torque vs RPM", "#ffcc00")
-        # self.main_layout.addWidget(self.torque_graph, 1, 0, 1, 2) # Row 1, Col 0, spans 2 cols
+        # RPM/SPEED PLOT (LEFT), MAP (RIGHT)
+        self.rpm_speed_graph = RpmSpeedPlot("Korelacja RPM / Prędkość")
+        self.main_layout.addWidget(self.rpm_speed_graph, 1, 0, 1, 2) # Row 1, Col 0, Span 2
 
-        self.torque_graph = BarGraph(
-            "Torque vs RPM",
-            [
-                "Idle",
-                "Point 1",
-                "Point 2",
-                "Point 3",
-                "Point 4",
-            ],
-            color="#ff4444",
-        )
-        self.torque_graph.setMouseEnabled(x=False, y=False)
-        self.torque_graph.hideButtons()
-        self.torque_graph.setYRange(-125, 130)
-        self.main_layout.addWidget(self.torque_graph, 1, 2, 1, 2)
+        map_container = QWidget()
+        map_vbox = QVBoxLayout(map_container)
+        map_vbox.setContentsMargins(0, 0, 0, 0)
 
-        self.speed_graph = RealTimePlot("Vehicle Speed (km/h)", "#00d1ff")
-        self.main_layout.addWidget(
-            self.speed_graph, 1, 0, 1, 2
-        )  # Row 1, Col 2, spans 2 cols
+        self.snap_checkbox = QCheckBox("Snap view")
+        self.snap_checkbox.setChecked(True)
+        self.snap_checkbox.setStyleSheet("color: #888; font-size: 10pt;")
+
+        self.telemetry_map = TelemetryMap()
+
+        self.snap_checkbox.stateChanged.connect(self.toggle_map_snap)
+
+        map_vbox.addWidget(self.snap_checkbox)
+        map_vbox.addWidget(self.telemetry_map)
+
+        self.main_layout.addWidget(map_container, 1, 2, 1, 2) # Row 1, Col 2, Span 2
 
         self.central_stack.addWidget(self.page_data)
 
@@ -150,6 +158,11 @@ class TelemetryDashboard(QMainWindow):
         main_page_layout.addWidget(scroll)
 
         self.central_stack.addWidget(self.page_errors)
+
+    def toggle_map_snap(self, state):
+        # state == 2 checked
+        # state == 0 unchecked
+        self.telemetry_map.auto_center = (state == 2)
 
     def add_error(self, message, timestamp=""):
         error = ErrorCard(message, timestamp)
@@ -201,7 +214,7 @@ class TelemetryDashboard(QMainWindow):
             QMessageBox.critical(self, "Serial Error", f"Could not open {target_port}")
 
     def handle_serial_data(self):
-        # This will now trigger whenever data actually hits the buffer
+
         while self.serial.canReadLine():
             try:
                 line_bytes = self.serial.readLine()
@@ -215,22 +228,18 @@ class TelemetryDashboard(QMainWindow):
                 param, value = raw_data.split("=", 1)
 
                 if param == "ENGINE_SPEED":
-                    self.speed_card.update_value(int(value))
+                    self.rpm_card.update_value(int(value))
+                    self.rpm_speed_graph.update_plot(int(value), int(value)) # Do zmiany
                 elif param == "ENGINE_LOAD":
                     self.load_card.update_value(int(value))
                 elif param == "VEHICLE_SPEED":
-                    self.speed_graph.update_plot(int(value))
+                    self.rpm_speed_graph.update_plot(int(value), int(value)) # Do zmiany
                 elif param == "COOLANT_TEMP":
                     self.coolant_temp_card.update_value(float(value))
-                elif param == "FUEL_PRESSURE":
-                    self.fuel_pressure_card.update_value(int(value))
+                elif param == "OIL_TEMP":
+                    self.oil_temp_card.update_value(int(value))
                 elif "STFT" in param or "LTFT" in param:
                     self.fuel_trim_graph.update_curve(param.lower(), int(value))
-                elif param == "ENGINE_PERECENT_TORQUE":
-                    tab = [int(x) for x in value.split(",")]
-
-                    if len(tab) == 5:
-                        self.torque_graph.update_bars(tab)
 
             except (UnicodeDecodeError, ValueError) as e:
                 print(f"Parsing error: {e}")
