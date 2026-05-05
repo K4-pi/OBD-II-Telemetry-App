@@ -1,0 +1,20 @@
+{
+  "version": 8,
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "sprite": "https://demotiles.maplibre.org/style-files/sprite",
+  "sources": {
+    "data": {
+      "type": "vector",
+      "tiles": ["http://localhost:8000/tiles/{z}/{x}/{y}.pbf"],
+      "minzoom": 0,
+      "maxzoom": 14
+    }
+  },
+  "layers": [
+    {"id": "bg", "type": "background", "paint": {"background-color": "#1e1e1e"}},
+    {"id": "land", "type": "fill", "source": "data", "source-layer": "land", "paint": {"fill-color": "#2a2a2a"}},
+    {"id": "water-poly", "type": "fill", "source": "data", "source-layer": "water_polygons", "paint": {"fill-color": "#111"}},
+    {"id": "water-line", "type": "line", "source": "data", "source-layer": "water_lines", "paint": {"line-color": "#111", "line-width": 1}},
+    {"id": "streets", "type": "line", "source": "data", "source-layer": "streets", "paint": {"line-color": "#444", "line-width": 1}}
+  ]
+}

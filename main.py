@@ -19,7 +19,8 @@ from PyQt6.QtWidgets import (
 
 from src.components import ErrorCard, MetricCard
 from src.plots import BarGraph, MultiRealTimePlot, RealTimePlot, RpmSpeedPlot
-from src.map import TelemetryMap
+from src.map.map import TelemetryMap
+from src.map.map_server import start_server
 
 # Global Style
 DARK_THEME = """
@@ -59,8 +60,8 @@ class TelemetryDashboard(QMainWindow):
         self.auto_connect()
 
         # for map testing
-        self.x = 50.02557915602892
-        self.y = 22.007746519509208
+        self.x = 50.03065593163593
+        self.y = 22.01302386017447
 
         # TEST AREA
         self.timer = QTimer()
@@ -80,7 +81,7 @@ class TelemetryDashboard(QMainWindow):
 
         self.telemetry_map.update_position(self.x, self.y, rpm, speed)
 
-        self.x += 0.0001
+        # self.x += 0.0001
         self.y += 0.0001
 
         self.fuel_trim_graph.update_curve("stft1", int(random.randrange(-20, 20)))
@@ -249,4 +250,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = TelemetryDashboard()
     window.show()
+    start_server()
     sys.exit(app.exec())
