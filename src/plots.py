@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import pyqtgraph as pg
 from PyQt6.QtCore import Qt
@@ -34,19 +35,20 @@ class MultiRealTimePlot(pg.PlotWidget):
 
 class RealTimePlot(pg.PlotWidget):
     def __init__(self, title, color="#00d1ff"):
-        super().__init__()
+        axis = pg.DateAxisItem(orientation='bottom')
+        super().__init__(axisItems={'bottom': axis})
         self.setBackground("#1e1e1e")
         self.setTitle(title, color="#888", size="10pt")
         self.showGrid(x=True, y=True, alpha=0.3)
         self.curve = self.plot(pen=pg.mkPen(color=color, width=2))
         self.data = []
+        self.timestamps = []
 
-    def update_plot(self, new_point):
+    def update_plot(self, new_point, current_time):
+        self.timestamps.append(current_time)
         self.data.append(new_point)
-        # if len(self.data) > 100:
-        #     self.data.pop(0)
 
-        self.curve.setData(self.data)
+        self.curve.setData(self.timestamps, self.data)
 
 
 # class BarGraph(pg.PlotWidget):
