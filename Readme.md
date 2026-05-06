@@ -8,12 +8,13 @@ Aplikacja służąca do analizy danych pozyskiwanych z urządzenia [_OBD II car 
 
 ## Zakres projektu opis funkcjonalności:
 - Komunikacje z urządzeniem pozyskującym dane (UART)
-- Wysyłanie komend do urządzenia czytającego dane (_w trakcie pracy_) 
-- Czytelne wyświetlanie danych w formie _grafów_, _kart_ 
+- Dynamiczna wizualizacja danych w formie _grafów_, _kart_ 
 - Możliwość eksportowania grafów danych do pliku SVG (_w trakcie pracy_) 
 
 ## Panele / zakładki aplikacji
-![Główne okno](images/main.png)
+![Current Data](images/main.png)
+
+![Fuel Trim](images/trim.png)
 
 - Telemetry Dashboard:
     - pasek narzędzi
@@ -34,8 +35,9 @@ Aplikacja służąca do analizy danych pozyskiwanych z urządzenia [_OBD II car 
 - PyQt6    -> GUI
 - PyQtGraph  -> Do tworzenia grafów danych 
 - QSerialPort -> Do komunikacji z urządzeniem czytającym dane
-- Numpy -> Do obrabiania danych
+- QtWebEngineWidgets -> Do wyświetlania mapy GPS
+- Flask + Sqlite -> Lokalna komunikacja z bazą danych dla mapy GPS
+- Numpy -> Obróbka danych
 
 ## Instrukcja uruchomienia aplikacji
 Aplikacje można uruchomić poprzez użycie interpretera python na plik _main.py_.
-
