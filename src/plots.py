@@ -50,6 +50,31 @@ class RealTimePlot(pg.PlotWidget):
 
         self.curve.setData(self.timestamps, self.data)
 
+class DotPlot(pg.PlotWidget):
+    def __init__(self, title, x_label, y_label):
+        super().__init__()
+        self.setBackground('#1e1e1e')
+        self.setTitle(title, color="#888", size="10pt")
+
+        self.setLabel('bottom', x_label, color="#888")
+        self.setLabel('left', y_label, color="#888")
+        self.showGrid(x=True, y=True, alpha=0.3)
+
+        self.scatter = pg.ScatterPlotItem(
+            size=8,
+            pen=pg.mkPen(None),
+            brush=pg.mkBrush("red")
+        )
+        self.addItem(self.scatter)
+
+        self.x_data = []
+        self.y_data = []
+
+    def add_point(self, x, y):
+        self.x_data.append(x)
+        self.y_data.append(y)
+
+        self.scatter.setData(self.x_data, self.y_data)
 
 # class BarGraph(pg.PlotWidget):
 #     def __init__(self, title, categories, color="#00d1ff"):

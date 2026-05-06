@@ -34,7 +34,7 @@ class TelemetryMap(QWebEngineView):
                     container: 'map',
                     style: 'http://localhost:9997/style.json',
                     center: [22.01, 50.04],
-                    zoom: 13,
+                    zoom: 18,
                     pitch: 45
                 });
 

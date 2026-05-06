@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.components import ErrorCard, MetricCard
-from src.plots import MultiRealTimePlot, RealTimePlot
+from src.plots import MultiRealTimePlot, RealTimePlot, DotPlot
 from src.map.map import TelemetryMap
 from src.map.map_server import start_server
 
@@ -46,7 +46,7 @@ class TelemetryDashboard(QMainWindow):
 
         self.serial = QSerialPort()
 
-        self.now = time.time()
+        # self.now = time.time()
 
         # central widget
         self.central_stack = QStackedWidget()
@@ -59,7 +59,7 @@ class TelemetryDashboard(QMainWindow):
         self.create_pages()
         self.create_toolbar()
 
-        self.speed_graph.update_plot(0, self.now)
+        self.speed_graph.update_plot(0, time.time())
 
         # Automatically try to connect to available ESP32/USB port
         self.auto_connect()
@@ -85,6 +85,8 @@ class TelemetryDashboard(QMainWindow):
 
         self.telemetry_map.update_position(self.x, self.y, rpm, speed)
 
+        self.dot_plot.add_point(int(random.randrange(0, 3500)), int(random.randrange(0, 160))) # RPM / SPEED
+
         # later = datetime.datetime.now()
         # diff = later - self.now
 
@@ -93,21 +95,23 @@ class TelemetryDashboard(QMainWindow):
         #     self.speed_graph.update_plot(speed) # SPEED GRAPH UPDATE
 
         #     # self.x += 0.0001    MAP UPDATE
-        #     self.y += 0.0001
+        self.y += 0.0001
 
         #     print("More than 5 second passed")
 
-        later = time.time()
-        diff = later - self.now
+        self.speed_graph.update_plot(speed, time.time()) # SPEED GRAPH UPDATE
 
-        if (diff >= 5.0): # Every 5 seconds
-            self.now = later
-            self.speed_graph.update_plot(speed, self.now) # SPEED GRAPH UPDATE
+        # later = time.time()
+        # diff = later - self.now
 
-            # self.x += 0.0001    MAP UPDATE
-            self.y += 0.0001
+        # if (diff >= 5.0): # Every 5 seconds
+        #     self.now = later
 
-            print("More than 5 second passed")
+
+        #     # self.x += 0.0001    MAP UPDATE
+        #     self.y += 0.0001
+
+        #     print("More than 5 second passed")
 
         self.fuel_trim_graph.update_curve("stft1", int(random.randrange(-20, 20)))
         self.fuel_trim_graph.update_curve("stft2", int(random.randrange(-20, 20)))
@@ -132,12 +136,20 @@ class TelemetryDashboard(QMainWindow):
         self.main_layout.addWidget(self.load_card, 0, 2)
         self.main_layout.addWidget(self.coolant_temp_card, 0, 3)
 
-        # RPM/SPEED PLOT (LEFT), MAP (RIGHT)
+        # ROW 1: Wykres liniowy
         self.speed_graph = RealTimePlot("Prędkość (Km/h)")
-        self.main_layout.addWidget(self.speed_graph, 1, 0, 1, 2) # Row 1, Col 0, Span 2
-
         self.speed_graph.setLimits(yMin=0)
+        self.main_layout.addWidget(self.speed_graph, 1, 0, 1, 2) # Wiersz 1, Kolumna 0, Span 2
 
+        # ROW 2: dot plot
+        self.dot_plot = DotPlot("Correlation RPM vs Engine Speed", "RPM", "Engine Speed (km/h)")
+        self.dot_plot.setXRange(0, 8000)
+        self.dot_plot.setYRange(0, 100)
+        self.main_layout.addWidget(self.dot_plot, 2, 0, 1, 2) # Wiersz 2, Kolumna 0, Span 2
+
+        self.dot_plot.setLimits(yMin=0, yMax=400, xMin=0)
+
+        # Mapa (Container)
         map_container = QWidget()
         map_vbox = QVBoxLayout(map_container)
         map_vbox.setContentsMargins(0, 0, 0, 0)
@@ -147,13 +159,12 @@ class TelemetryDashboard(QMainWindow):
         self.snap_checkbox.setStyleSheet("color: #888; font-size: 10pt;")
 
         self.telemetry_map = TelemetryMap()
-
         self.snap_checkbox.stateChanged.connect(self.toggle_map_snap)
 
         map_vbox.addWidget(self.snap_checkbox)
         map_vbox.addWidget(self.telemetry_map)
 
-        self.main_layout.addWidget(map_container, 1, 2, 1, 2) # Row 1, Col 2, Span 2
+        self.main_layout.addWidget(map_container, 1, 2, 2, 2) # Row 1, Col 2, rowSpan 2, colSpan 2
 
         self.central_stack.addWidget(self.page_data)
 
@@ -264,13 +275,15 @@ class TelemetryDashboard(QMainWindow):
                     self.load_card.update_value(int(value))
 
                 elif param == "VEHICLE_SPEED":
-                    later = time.time()
-                    diff = later - self.now
+                    self.speed_graph.update_plot(speed, self.now) # SPEED GRAPH UPDATE
 
-                    if (diff >= 5.0): # Every 5 seconds
-                        self.now = later
-                        self.speed_graph.update_plot(speed, self.now) # SPEED GRAPH UPDATE
-                        print("More than 5 second passed")
+                    # later = time.time()
+                    # diff = later - self.now
+
+                    # if (diff >= 5.0): # Every 5 seconds
+                    #     self.now = later
+
+                    #     print("More than 5 second passed")
 
                 elif param == "COOLANT_TEMP":
                     self.coolant_temp_card.update_value(float(value))
