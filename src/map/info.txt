@@ -1,0 +1,1 @@
+If you want to use a custom map you need to upload into this folder your .mbtiles file with name "telemetry_map".

@@ -6,7 +6,7 @@ import threading
 app = Flask(__name__)
 CORS(app)
 
-MBTILES_PATH = "src/map/podkarpackie-shortbread-1.0.mbtiles"
+MBTILES_PATH = "src/map/telemetry_map.mbtiles"
 
 def get_tile_from_db(z, x, y):
     try:

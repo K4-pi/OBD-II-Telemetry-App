@@ -144,7 +144,7 @@ class TelemetryDashboard(QMainWindow):
         self.main_layout.addWidget(self.speed_graph, 1, 0, 1, 2) # Wiersz 1, Kolumna 0, Span 2
 
         # ROW 2: dot plot
-        self.dot_plot = DotPlot("Correlation RPM vs Engine Speed", "RPM", "Engine Speed (km/h)")
+        self.dot_plot = DotPlot("Prędkość vs RPM", "RPM", "Prędkość (Km/h)")
         self.dot_plot.setXRange(0, 8000)
         self.dot_plot.setYRange(0, 100)
         self.main_layout.addWidget(self.dot_plot, 2, 0, 1, 2) # Wiersz 2, Kolumna 0, Span 2
