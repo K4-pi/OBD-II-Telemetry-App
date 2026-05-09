@@ -2,6 +2,8 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineSettings
 from PyQt6.QtCore import QUrl
 
+import time
+
 class TelemetryMap(QWebEngineView):
     def __init__(self):
         super().__init__()
@@ -55,7 +57,8 @@ class TelemetryMap(QWebEngineView):
                         popup.setLngLat(coords)
                              .setHTML('<div style="color:#000;font-size:13px;line-height:1.6">'
                                  + '<b>Speed:</b> ' + props.speed + ' km/h<br>'
-                                 + '<b>RPM:</b> ' + props.rpm
+                                 + '<b>RPM:</b> ' + props.rpm + '<br>'
+                                 + '<b>TIME:</b> ' + props.time
                                  + '</div>')
                              .addTo(map);
                     });
@@ -69,14 +72,14 @@ class TelemetryMap(QWebEngineView):
                     console.log("MAP_LOADED");
                 });
 
-                function addPoint(lat, lng, rpm, speed, shouldSnap) {
+                function addPoint(lat, lng, rpm, speed, shouldSnap, time) {
                     if (!isReady) return;
                     var pos = [lng, lat];
                     lineCoords.push(pos);
                     pointData.features.push({
                         "type": "Feature",
                         "geometry": { "type": "Point", "coordinates": pos },
-                        "properties": { "rpm": rpm, "speed": speed }
+                        "properties": { "rpm": rpm, "speed": speed, "time": time }
                     });
 
                     map.getSource('route').setData({ 'type': 'Feature', 'geometry': { 'type': 'LineString', 'coordinates': lineCoords }});
@@ -96,4 +99,8 @@ class TelemetryMap(QWebEngineView):
 
     def update_position(self, lat, lng, rpm, speed):
         snap = "true" if self.auto_center else "false"
-        self.page().runJavaScript(f"addPoint({lat}, {lng}, {rpm}, {speed}, {snap})")
+
+        fmt = time.localtime(time.time())
+        strtime = time.strftime("%D %T", fmt)
+
+        self.page().runJavaScript(f"addPoint({lat}, {lng}, {rpm}, {speed}, {snap}, '{strtime}')")

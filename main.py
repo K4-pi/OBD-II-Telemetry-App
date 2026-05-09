@@ -46,6 +46,12 @@ class TelemetryDashboard(QMainWindow):
 
         self.serial = QSerialPort()
 
+        self.received_speed = False
+        self.received_rpm = False
+
+        self.lat = -1.0
+        self.lng = -1.0
+
         # self.now = time.time()
 
         # central widget
@@ -65,13 +71,13 @@ class TelemetryDashboard(QMainWindow):
         self.auto_connect()
 
         # for map testing
-        self.x = 50.03065593163593
-        self.y = 22.01302386017447
+        # self.x = 49.65950265973216
+        # self.y = 21.394393128277482
 
         # TEST AREA
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.simulate)
-        self.timer.start(1000)
+        # self.timer = QTimer()
+        # self.timer.timeout.connect(self.simulate)
+        # self.timer.start(1000)
 
     def simulate(self):
 
@@ -90,12 +96,8 @@ class TelemetryDashboard(QMainWindow):
         # later = datetime.datetime.now()
         # diff = later - self.now
 
-        # if (diff.total_seconds() >= 5.0): # Every 5 seconds
-        #     self.now = later
-        #     self.speed_graph.update_plot(speed) # SPEED GRAPH UPDATE
-
-        #     # self.x += 0.0001    MAP UPDATE
-        self.y += 0.0001
+        self.x += 0.00001
+        self.y += 0.00001
 
         #     print("More than 5 second passed")
 
@@ -269,21 +271,21 @@ class TelemetryDashboard(QMainWindow):
                 param, value = raw_data.split("=", 1)
 
                 if param == "ENGINE_SPEED":
-                    self.rpm_card.update_value(int(value))
+                    self.received_rpm = True
+
+                    self.rpm = int(value)
+
+                    self.rpm_card.update_value(self.rpm)
 
                 elif param == "ENGINE_LOAD":
                     self.load_card.update_value(int(value))
 
                 elif param == "VEHICLE_SPEED":
-                    self.speed_graph.update_plot(speed, self.now) # SPEED GRAPH UPDATE
+                    self.received_speed = True
 
-                    # later = time.time()
-                    # diff = later - self.now
+                    self.speed = int(value)
 
-                    # if (diff >= 5.0): # Every 5 seconds
-                    #     self.now = later
-
-                    #     print("More than 5 second passed")
+                    self.speed_graph.update_plot(self.speed, time.time()) # SPEED GRAPH UPDATE
 
                 elif param == "COOLANT_TEMP":
                     self.coolant_temp_card.update_value(float(value))
@@ -293,6 +295,31 @@ class TelemetryDashboard(QMainWindow):
 
                 elif "STFT" in param or "LTFT" in param:
                     self.fuel_trim_graph.update_curve(param.lower(), int(value))
+
+                elif param == "GPS":
+                    local_lat, local_lng = value.split(',', 2)
+
+                    local_lat = float(local_lat)
+                    local_lng = float(local_lng)
+
+                    if self.lat == -1.0 and self.lng == -1.0:
+                        self.lat = local_lat
+                        self.lng = local_lng
+
+                        self.telemetry_map.update_position(self.lat, self.lng, self.rpm, self.speed)
+
+                    elif abs(self.lat - local_lat) > 0.00001 and abs(self.lng - local_lng) > 0.00001:
+                        self.lat = local_lat
+                        self.lng = local_lng
+
+                        self.telemetry_map.update_position(self.lat, self.lng, self.rpm, self.speed)
+
+
+                if self.received_speed and self.received_rpm: # Update dot graph when read both new values
+                    self.received_rpm = False
+                    self.received_speed = False
+
+                    self.dot_plot.add_point(self.rpm, self.speed)
 
             except (UnicodeDecodeError, ValueError) as e:
                 print(f"Parsing error: {e}")
