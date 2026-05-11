@@ -15,13 +15,15 @@ from PyQt6.QtWidgets import (
     QToolBar,
     QVBoxLayout,
     QWidget,
-    QCheckBox
+    QCheckBox,
+    QFileDialog
 )
 
 from src.components import ErrorCard, MetricCard
 from src.plots import MultiRealTimePlot, RealTimePlot, DotPlot
 from src.map.map import TelemetryMap
 from src.map.map_server import start_server
+from src.raport import Report
 
 # Global Style
 DARK_THEME = """
@@ -36,7 +38,6 @@ DARK_THEME = """
     QLabel#Title { font-size: 12px; color: #888; text-transform: uppercase; }
 """
 
-
 class TelemetryDashboard(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -48,6 +49,10 @@ class TelemetryDashboard(QMainWindow):
 
         self.received_speed = False
         self.received_rpm = False
+
+        self.load_data = []
+        self.coolant_data = []
+        self.oil_data = []
 
         self.lat = -1.0
         self.lng = -1.0
@@ -70,11 +75,12 @@ class TelemetryDashboard(QMainWindow):
         # Automatically try to connect to available ESP32/USB port
         self.auto_connect()
 
+        # TEST AREA
+
         # for map testing
         # self.x = 49.65950265973216
         # self.y = 21.394393128277482
 
-        # TEST AREA
         # self.timer = QTimer()
         # self.timer.timeout.connect(self.simulate)
         # self.timer.start(1000)
@@ -83,11 +89,18 @@ class TelemetryDashboard(QMainWindow):
 
         rpm: int = random.randrange(1000, 3500)
         speed: int = random.randrange(25, 65)
+        load: int = random.randrange(1, 100)
+        coolant: int = random.randrange(-40, 215)
+        oil: int = random.randrange(-40, 200)
+
+        self.load_data.append(load)
+        self.coolant_data.append(coolant)
+        self.oil_data.append(oil)
 
         self.rpm_card.update_value(rpm)
-        self.load_card.update_value(int(random.randrange(1, 100)))
-        self.coolant_temp_card.update_value(float(random.randrange(-40, 40)))
-        self.oil_temp_card.update_value(int(random.randrange(0, 765)))
+        self.load_card.update_value(load)
+        self.coolant_temp_card.update_value(coolant)
+        self.oil_temp_card.update_value(oil)
 
         self.telemetry_map.update_position(self.x, self.y, rpm, speed)
 
@@ -98,8 +111,6 @@ class TelemetryDashboard(QMainWindow):
 
         self.x += 0.00001
         self.y += 0.00001
-
-        #     print("More than 5 second passed")
 
         self.speed_graph.update_plot(speed, time.time()) # SPEED GRAPH UPDATE
 
@@ -234,6 +245,11 @@ class TelemetryDashboard(QMainWindow):
         error_act.triggered.connect(lambda: self.central_stack.setCurrentIndex(2))
         toolbar.addAction(error_act)
 
+        # Export
+        export_act = QAction("Export Report", self)
+        export_act.triggered.connect(self.on_export_clicked)
+        toolbar.addAction(export_act)
+
     def auto_connect(self):
         available_ports = QSerialPortInfo.availablePorts()
         if not available_ports:
@@ -278,7 +294,10 @@ class TelemetryDashboard(QMainWindow):
                     self.rpm_card.update_value(self.rpm)
 
                 elif param == "ENGINE_LOAD":
-                    self.load_card.update_value(int(value))
+                    v = int(value)
+
+                    self.load_card.update_value(v)
+                    self.load_data.append(v)
 
                 elif param == "VEHICLE_SPEED":
                     self.received_speed = True
@@ -288,10 +307,16 @@ class TelemetryDashboard(QMainWindow):
                     self.speed_graph.update_plot(self.speed, time.time()) # SPEED GRAPH UPDATE
 
                 elif param == "COOLANT_TEMP":
-                    self.coolant_temp_card.update_value(float(value))
+                    v = int(value)
+
+                    self.coolant_temp_card.update_value(v)
+                    self.coolant_data.append(v)
 
                 elif param == "OIL_TEMP":
-                    self.oil_temp_card.update_value(int(value))
+                    v = int(value)
+
+                    self.oil_temp_card.update_value(v)
+                    self.oil_data.append(v)
 
                 elif "STFT" in param or "LTFT" in param:
                     self.fuel_trim_graph.update_curve(param.lower(), int(value))
@@ -324,6 +349,29 @@ class TelemetryDashboard(QMainWindow):
             except (UnicodeDecodeError, ValueError) as e:
                 print(f"Parsing error: {e}")
 
+    def on_export_clicked(self):
+
+        path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Export Telemetry Report",
+                "report.svg",
+                "SVG Files (*.svg)"
+            )
+
+        if path:
+            report_data = {
+                'speed': self.speed_graph.data,
+                'rpm': self.dot_plot.x_data,
+                'load': self.load_data,
+                'coolant': self.coolant_data,
+                'oil_temp': self.oil_data
+            }
+
+            exporter = Report(report_data)
+
+            graphs = [self.dot_plot, self.fuel_trim_graph]
+
+            exporter.generate_svg(path, graph_widgets=graphs)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
