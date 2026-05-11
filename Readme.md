@@ -39,4 +39,4 @@ Aplikacje można uruchomić poprzez użycie interpretera python na plik _main.py
 python main.py
 ```
 
-Domyślną mapą jest mapa Podkarpacia jako plik _telemetry_map.mbtiles_, w celu zmiany mapy należy pobrać ją z internetu i zastąpić ją tą samą nazwą.
+Domyślną mapą jest mapa Podkarpacia jako plik _src/map/telemetry_map.mbtiles_, w celu zmiany mapy należy pobrać ją z internetu i zastąpić ją tą samą nazwą.
