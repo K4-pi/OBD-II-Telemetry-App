@@ -9,35 +9,34 @@ Aplikacja służąca do analizy danych pozyskiwanych z urządzenia [_OBD II car 
 ## Zakres projektu opis funkcjonalności:
 - Komunikacje z urządzeniem pozyskującym dane (UART)
 - Dynamiczna wizualizacja danych w formie _grafów_, _kart_ 
-- Możliwość eksportowania grafów danych do pliku SVG (_w trakcie pracy_) 
+- Wyświetlanie punktów na mapie na podstawie danych z modułu GPS
+- Generowanie raportu z pozyskanych danych
 
 ## Panele / zakładki aplikacji
 ![Current Data](images/main.png)
 
 ![Fuel Trim](images/trim.png)
 
-- Telemetry Dashboard:
-    - pasek narzędzi
-    - karta ciśnienia paliwa
-    - karta obrotów silnika
-    - karta obciążenia silnika
-    - karta temperatury płynu chłodzącego
-    - graf prędkości w km/h
-    - graf obrotów silnika (w formie procentowej)
-
-- Fuel Trim:
-    - pasek narzędzi
-    - graf dawki paliwa
-
-- Error Codes (_w trakcie pracy_) 
+## Funkcjonalność
+- Dynamiczna analiza danych w formie grafów,
+- Interaktywna mapa geograficzna
+- Backend z baządanych do pobierania zdjęć dla mapy z pliku .mbtiles (Flask, SQLlite)
+- Komunikacja z urządzeniem ESP32 poprzez protokół UART
+- Generowanie raprotu z zebranych danych do formatu .svg
 
 ## Wykorzystane biblioteki:
 - PyQt6    -> GUI
-- PyQtGraph  -> Do tworzenia grafów danych 
-- QSerialPort -> Do komunikacji z urządzeniem czytającym dane
-- QtWebEngineWidgets -> Do wyświetlania mapy GPS
+- PyQtGraph  -> Tworzenie grafów danych 
+- QSerialPort -> Komunikacja z urządzeniem zczytającym dane
+- QtWebEngineWidgets -> Wyświetlanie mapy GPS
 - Flask + Sqlite -> Lokalna komunikacja z bazą danych dla mapy GPS
-- Numpy -> Obróbka danych
+- QtSvg -> Generowanie raportu .svg
 
 ## Instrukcja uruchomienia aplikacji
 Aplikacje można uruchomić poprzez użycie interpretera python na plik _main.py_.
+
+```bash
+python main.py
+```
+
+Domyślną mapą jest mapa Podkarpacia jako plik _telemetry_map.mbtiles_, w celu zmiany mapy należy pobrać ją z internetu i zastąpić ją tą samą nazwą.
