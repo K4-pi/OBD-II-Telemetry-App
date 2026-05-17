@@ -2,6 +2,8 @@ import random
 import sys
 import time
 
+from vininfo import Vin
+
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction
 from PyQt6.QtSerialPort import QSerialPort, QSerialPortInfo
@@ -16,7 +18,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QCheckBox,
-    QFileDialog
+    QFileDialog,
+    QLabel
 )
 
 from src.components import ErrorCard, MetricCard
@@ -28,11 +31,6 @@ from src.raport import Report
 # Global Style
 DARK_THEME = """
     QMainWindow { background-color: #121212; }
-    QFrame#Card {
-        background-color: #1e1e1e;
-        border-radius: 8px;
-        border: 1px solid #333;
-    }
     QLabel { color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
     QLabel#Value { font-size: 24px; font-weight: bold; color: #00d1ff; }
     QLabel#Title { font-size: 12px; color: #888; text-transform: uppercase; }
@@ -54,8 +52,8 @@ class TelemetryDashboard(QMainWindow):
         self.coolant_data = []
         self.oil_data = []
 
-        self.lat = -1.0
-        self.lng = -1.0
+        self.lat: float = -1.0
+        self.lng: float = -1.0
 
         # self.now = time.time()
 
@@ -77,13 +75,25 @@ class TelemetryDashboard(QMainWindow):
 
         # TEST AREA
 
-        # for map testing
-        # self.x = 49.65950265973216
-        # self.y = 21.394393128277482
+        vin = Vin("VF1LM1B0H36666155")
 
-        # self.timer = QTimer()
-        # self.timer.timeout.connect(self.simulate)
-        # self.timer.start(1000)
+        self.vin_country_card.update_value(vin.country)
+        self.vin_manufcaturer_card.update_value(vin.manufacturer)
+        self.vin_region_card.update_value(vin.region)
+
+        self.vin_year_card.update_value(vin.years)
+        self.vin_vds_card.update_value(vin.vds)
+        self.vin_vis_card.update_value(vin.vis)
+
+        # print(Vin('3D3KS28D96G214227').years)
+
+        # for map testing
+        self.x = 49.65950265973216
+        self.y = 21.394393128277482
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.simulate)
+        self.timer.start(1000)
 
     def simulate(self):
 
@@ -197,21 +207,54 @@ class TelemetryDashboard(QMainWindow):
         self.central_stack.addWidget(self.page_fuel_trim)
 
         # PAGE 3: ERROR CODES
-        self.page_errors = QWidget()
-        main_page_layout = QVBoxLayout(self.page_errors)
+        self.page_error = QWidget()
+        error_layout = QVBoxLayout(self.page_error)
 
+        # 1. Main Scroll Area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("background: transparent; border: none;")
 
         scroll_content = QWidget()
         self.layout_errors = QVBoxLayout(scroll_content)
+        self.layout_errors.setContentsMargins(20, 20, 20, 20) # Give it some breathing room
+        self.layout_errors.setSpacing(20)
         self.layout_errors.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        scroll.setWidget(scroll_content)
-        main_page_layout.addWidget(scroll)
+        # 2. TOP TEXT AREA
+        self.error_header_label = QLabel("VIN")
+        self.error_header_label.setStyleSheet("font-size: 18px; color: #bbb; font-weight: bold;")
+        self.error_header_label.setWordWrap(True)
+        self.layout_errors.addWidget(self.error_header_label)
 
-        self.central_stack.addWidget(self.page_errors)
+        # 3. GRID FOR CARDS (2 rows of 3)
+        self.grid_container = QGridLayout()
+        self.grid_container.setSpacing(15)
+
+        self.vin_country_card = MetricCard(f"country")
+        self.vin_manufcaturer_card = MetricCard(f"manufacturer")
+        self.vin_region_card = MetricCard(f"region")
+
+        self.vin_year_card = MetricCard(f"year")
+        self.vin_vds_card = MetricCard(f"vds")
+        self.vin_vis_card = MetricCard(f"vis")
+
+        self.grid_container.addWidget(self.vin_country_card, 0, 0)
+        self.grid_container.addWidget(self.vin_manufcaturer_card, 0, 1)
+        self.grid_container.addWidget(self.vin_region_card, 0, 2)
+
+        self.grid_container.addWidget(self.vin_year_card, 1, 0)
+        self.grid_container.addWidget(self.vin_vds_card, 1, 1)
+        self.grid_container.addWidget(self.vin_vis_card, 1, 2)
+
+        # Add grid to the main vertical layout
+        self.layout_errors.addLayout(self.grid_container)
+
+        # 4. Finalize Scroll
+        scroll.setWidget(scroll_content)
+        error_layout.addWidget(scroll) # Add scroll to the page's actual layout
+
+        self.central_stack.addWidget(self.page_error)
 
     def toggle_map_snap(self, state):
         # state == 2 checked
@@ -339,6 +382,16 @@ class TelemetryDashboard(QMainWindow):
 
                         self.telemetry_map.update_position(self.lat, self.lng, self.rpm, self.speed)
 
+                elif param == "VIN":
+                    vin = Vin(value)
+
+                    self.vin_country_card.update_value(vin.country)
+                    self.vin_manufcaturer_card.update_value(vin.manufacturer)
+                    self.vin_region_card.update_value(vin.region)
+
+                    self.vin_year_card.update_value(vin.years)
+                    self.vin_vds_card.update_value(vin.vds)
+                    self.vin_vis_card.update_value(vin.vis)
 
                 if self.received_speed and self.received_rpm: # Update dot graph when read both new values
                     self.received_rpm = False
