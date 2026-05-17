@@ -31,6 +31,7 @@ Aplikacja służąca do analizy danych pozyskiwanych z urządzenia [_OBD II car 
 - QtWebEngineWidgets -> Wyświetlanie mapy GPS
 - Flask + Sqlite -> Lokalna komunikacja z bazą danych dla mapy GPS
 - QtSvg -> Generowanie raportu .svg
+- vininfo -> Analiza numeru VIN samochodu
 
 ## Instrukcja uruchomienia aplikacji
 Aplikacje można uruchomić poprzez użycie interpretera python na plik _main.py_.
